@@ -12,6 +12,9 @@ async function createPaymentSession(order, provider = 'test', userId) {
   const idempotencyKey = `${order._id}_${provider}_${Date.now()}`;
 
   let paymentUrl = '';
+  // Render'dagi tashqi havola yoki config'dagi bazaviy manzilni olish
+  const baseUrl = process.env.RENDER_EXTERNAL_URL || config.baseUrl || 'https://itcket-uz.onrender.com';
+
   if (provider === 'click' && config.payment.click.serviceId) {
     paymentUrl = `https://my.click.uz/services/pay?service_id=${config.payment.click.serviceId}&merchant_id=${config.payment.click.merchantId}&amount=${order.total}&transaction_param=${order.orderNumber}`;
   } else if (provider === 'payme' && config.payment.payme.merchantId) {
@@ -20,7 +23,8 @@ async function createPaymentSession(order, provider = 'test', userId) {
   } else if (provider === 'uzum' && config.payment.uzum.merchantId) {
     paymentUrl = `https://www.uzumbank.uz/pay?merchant_id=${config.payment.uzum.merchantId}&order_id=${order.orderNumber}&amount=${order.total}`;
   } else {
-    paymentUrl = `${config.baseUrl}/api/payments/test-pay/${order._id}`;
+    // Localhost o'rniga Render'ning haqiqiy havolasi ishlatiladi
+    paymentUrl = `${baseUrl}/api/payments/test-pay/${order._id}`;
   }
 
   const payment = await Payment.create({
