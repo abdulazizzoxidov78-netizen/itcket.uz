@@ -32,14 +32,39 @@ async function startPlatform() {
       logger.info(`[Health Check] Health endpoint: ${config.baseUrl}/health`);
     });
 
-    // 3. Start Telegram Bot
+    // 3. Start Telegram Bot with 409 Conflict & Webhook/Polling cleanup
     const bot = getBotInstance();
     registerBotHandlers(bot);
 
     const botInfo = await bot.telegram.getMe();
     logger.info(`[Telegram Bot] @${botInfo.username} ("${botInfo.first_name}") muvaffaqiyatli ishga tushmoqda... ✅`);
 
-    await bot.launch();
+    // Eski webhook yoki polling qoldiqlarini tozalash (409 xatosining oldini olish uchun)
+    try {
+      await bot.telegram.deleteWebhook({ drop_pending_updates: true });
+    } catch (e) {}
+
+    // Botni ishga tushirish (agar 409 xatosi chiqsa, 5 soniya kutib qayta urinadi)
+    let launched = false;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        await bot.launch({ dropPendingUpdates: true });
+        launched = true;
+        break;
+      } catch (err) {
+        if (err.message && (err.message.includes('409') || err.message.includes('Conflict')) && attempt < 3) {
+          logger.warn(`[Telegram Bot] 409 Conflict aniqlandi. 5 soniyadan so'ng qayta urinish (${attempt}/3)...`);
+          await new Promise((res) => setTimeout(res, 5000));
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    if (!launched) {
+      throw new Error('Telegram botni ishga tushirib bo\'lmadi: 409 Conflict davom etmoqda.');
+    }
+
     logger.info(`[Telegram Bot] Polling faollashtirildi va xabarlarni qabul qilmoqda ✅`);
 
     // 4. Background cleanup for expired order reservations (Every 2 minutes)
