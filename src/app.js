@@ -13,6 +13,9 @@ const ticketController = require('./controllers/ticketController');
 function createApp() {
   const app = express();
 
+  // Render proksi-serveridan keladigan so'rovlarni to'g'ri qabul qilish uchun:
+  app.set('trust proxy', 1);
+
   // Basic security and parsing
   app.use(helmet({ contentSecurityPolicy: false }));
   app.use(cors({ origin: '*' }));
