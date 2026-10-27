@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - ELITE TICKETS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- html5-qrcode for live camera ticket scanning -->
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #090D16; color: #F8FAFC; }
+    .gold-gradient { background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); }
+    .glass-card { background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #090D16; }
+    ::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+  </style>
+</head>
+<body class="min-h-screen flex">
+
+  <!-- Sidebar -->
+  <aside class="w-64 bg-slate-950 border-r border-slate-800 flex flex-col justify-between shrink-0 hidden md:flex">
+    <div>
+      <div class="h-20 flex items-center px-6 border-b border-slate-800 space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-extrabold text-xl shadow-lg shadow-amber-500/10">
+          🎫
+        </div>
+        <div>
+          <h1 class="font-extrabold tracking-wider text-amber-400 text-lg">ELITE TICKETS</h1>
+          <p class="text-[10px] text-slate-500 font-medium">ADMINISTRATION</p>
+        </div>
+      </div>
+
+      <nav class="p-4 space-y-1 text-sm font-medium">
+        <button onclick="switchTab('overview')" id="nav-overview" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-amber-400 bg-amber-500/10 border border-amber-500/20">
+          <span>📊</span> <span>Asosiy panel</span>
+        </button>
+        <button onclick="switchTab('events')" id="nav-events" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-slate-400 hover:text-white hover:bg-slate-900">
+          <span>🎟</span> <span>Tadbirlar</span>
+        </button>
+        <button onclick="switchTab('ticket-types')" id="nav-ticket-types" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-slate-400 hover:text-white hover:bg-slate-900">
+          <span>🏷</span> <span>Chipta turlari</span>
+        </button>
+        <button onclick="switchTab('orders')" id="nav-orders" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-slate-400 hover:text-white hover:bg-slate-900">
+          <span>📦</span> <span>Buyurtmalar</span>
+        </button>
+        <button onclick="switchTab('tickets')" id="nav-tickets" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-slate-400 hover:text-white hover:bg-slate-900">
+          <span>🎫</span> <span>Chiptalar</span>
+        </button>
+        <button onclick="switchTab('scanner')" id="nav-scanner" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-slate-400 hover:text-white hover:bg-slate-900">
+          <span>📷</span> <span>QR Skaner (Turniket)</span>
+        </button>
+        <button onclick="switchTab('users')" id="nav-users" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition text-slate-400 hover:text-white hover:bg-slate-900">
+          <span>👥</span> <span>Foydalanuvchilar</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- User footer -->
+    <div class="p-4 border-t border-slate-800">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center font-bold text-amber-400 border border-slate-700" id="user-avatar">
+            A
+          </div>
+          <div class="overflow-hidden">
+            <div class="text-xs font-bold truncate text-white" id="user-name">Administrator</div>
+            <div class="text-[10px] text-amber-400 uppercase font-mono" id="user-role">superadmin</div>
+          </div>
+        </div>
+        <button onclick="logout()" title="Chiqish" class="text-slate-400 hover:text-red-400 p-2 transition">
+          🚪
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <main class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+    <!-- Top header bar -->
+    <header class="h-20 border-b border-slate-800 bg-slate-950/60 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-20">
+      <div class="flex items-center space-x-4">
+        <h2 class="text-xl font-bold text-white tracking-tight" id="page-title">Asosiy panel</h2>
+      </div>
+      <div class="flex items-center space-x-4">
+        <a href="/api/admin/reports/csv" id="csv-export-btn" class="bg-slate-800 hover:bg-slate-700 text-xs font-semibold px-4 py-2.5 rounded-xl border border-slate-700 flex items-center space-x-2 transition">
+          <span>📥</span> <span>Hisobot CSV</span>
+        </a>
+        <button onclick="openCreateEventModal()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-amber-500/20 transition flex items-center space-x-1.5">
+          <span>➕</span> <span>Yangi tadbir</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Page Body -->
+    <div class="p-6 max-w-7xl w-full mx-auto space-y-6">
+
+      <!-- SECTION: OVERVIEW -->
+      <div id="section-overview" class="space-y-6">
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div class="glass-card p-5 rounded-2xl relative overflow-hidden">
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Jami tushum</div>
+            <div class="text-2xl font-extrabold text-amber-400 mt-2" id="stat-revenue">0 so'm</div>
+            <div class="text-xs text-emerald-400 mt-2 font-medium flex items-center">
+              <span>●</span> <span class="ml-1.5">Tasdiqlangan to'lovlar</span>
+            </div>
+          </div>
+
+          <div class="glass-card p-5 rounded-2xl relative overflow-hidden">
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Sotilgan chiptalar</div>
+            <div class="text-2xl font-extrabold text-white mt-2" id="stat-tickets-sold">0 ta</div>
+            <div class="text-xs text-slate-400 mt-2 font-medium" id="stat-capacity">Mavjud: 0 ta</div>
+          </div>
+
+          <div class="glass-card p-5 rounded-2xl relative overflow-hidden">
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Faol tadbirlar</div>
+            <div class="text-2xl font-extrabold text-sky-400 mt-2" id="stat-events">0 ta</div>
+            <div class="text-xs text-slate-400 mt-2 font-medium" id="stat-total-events">Jami: 0 ta</div>
+          </div>
+
+          <div class="glass-card p-5 rounded-2xl relative overflow-hidden">
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Jami buyurtmalar</div>
+            <div class="text-2xl font-extrabold text-indigo-400 mt-2" id="stat-orders">0 ta</div>
+            <div class="text-xs text-emerald-400 mt-2 font-medium" id="stat-paid-orders">To'langan: 0 ta</div>
+          </div>
+        </div>
+
+        <!-- Recent Orders & Top Events -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 glass-card rounded-2xl p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-base font-bold text-white">Oxirgi buyurtmalar</h3>
+              <button onclick="switchTab('orders')" class="text-xs text-amber-400 hover:underline">Barchasini ko'rish →</button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="text-slate-400 border-b border-slate-800">
+                    <th class="pb-3 font-semibold">Buyurtma</th>
+                    <th class="pb-3 font-semibold">Mijoz</th>
+                    <th class="pb-3 font-semibold">Summa</th>
+                    <th class="pb-3 font-semibold">Holat</th>
+                    <th class="pb-3 font-semibold">Sana</th>
+                  </tr>
+                </thead>
+                <tbody id="overview-orders-tbody" class="divide-y divide-slate-800/60">
+                  <tr><td colspan="5" class="py-4 text-center text-slate-500">Yuklanmoqda...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="glass-card rounded-2xl p-6">
+            <h3 class="text-base font-bold text-white mb-4">Tizim holati</h3>
+            <div class="space-y-4 text-xs">
+              <div class="flex justify-between items-center p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <span class="text-slate-400">Telegram Bot:</span>
+                <span class="text-emerald-400 font-semibold flex items-center">● Faol (24/7)</span>
+              </div>
+              <div class="flex justify-between items-center p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <span class="text-slate-400">MongoDB Atlas:</span>
+                <span class="text-emerald-400 font-semibold flex items-center">● Ulandi</span>
+              </div>
+              <div class="flex justify-between items-center p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <span class="text-slate-400">To'lovlar rejimi:</span>
+                <span class="text-amber-400 font-semibold uppercase">TEST & CLICK/PAYME</span>
+              </div>
+              <div class="flex justify-between items-center p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <span class="text-slate-400">Jami mijozlar:</span>
+                <span class="text-white font-bold" id="stat-total-users">0 nafar</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION: EVENTS -->
+      <div id="section-events" class="space-y-6 hidden">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-bold text-white">Tadbirlar ro'yxati</h3>
+          <button onclick="openCreateEventModal()" class="bg-amber-500 text-slate-950 px-4 py-2 rounded-xl text-xs font-bold hover:bg-amber-400">
+            ➕ Yangi tadbir
+          </button>
+        </div>
+        <div class="glass-card rounded-2xl overflow-hidden">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-900/60 text-slate-400 border-b border-slate-800">
+              <tr>
+                <th class="p-4">Afisha</th>
+                <th class="p-4">Nomi</th>
+                <th class="p-4">Sana va vaqt</th>
+                <th class="p-4">Manzil</th>
+                <th class="p-4">Holat</th>
+                <th class="p-4 text-right">Amallar</th>
+              </tr>
+            </thead>
+            <tbody id="events-table-tbody" class="divide-y divide-slate-800">
+              <tr><td colspan="6" class="p-4 text-center text-slate-500">Yuklanmoqda...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SECTION: TICKET TYPES -->
+      <div id="section-ticket-types" class="space-y-6 hidden">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-bold text-white">Chipta turlari boshqaruvi</h3>
+          <button onclick="openCreateTicketTypeModal()" class="bg-amber-500 text-slate-950 px-4 py-2 rounded-xl text-xs font-bold hover:bg-amber-400">
+            ➕ Yangi chipta turi
+          </button>
+        </div>
+        <div class="glass-card rounded-2xl p-5">
+          <div class="mb-4 flex items-center space-x-3">
+            <label class="text-xs text-slate-400">Tadbirni tanlang:</label>
+            <select id="tt-event-select" onchange="loadTicketTypesForEvent()" class="bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-2">
+              <option value="">Tanlang...</option>
+            </select>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-900/60 text-slate-400 border-b border-slate-800">
+                <tr>
+                  <th class="p-4">Chipta turi</th>
+                  <th class="p-4">Narxi</th>
+                  <th class="p-4">Jami soni</th>
+                  <th class="p-4">Sotilgan</th>
+                  <th class="p-4">Mavjud</th>
+                  <th class="p-4">Sektor</th>
+                  <th class="p-4">Holat</th>
+                </tr>
+              </thead>
+              <tbody id="tt-table-tbody" class="divide-y divide-slate-800">
+                <tr><td colspan="7" class="p-4 text-center text-slate-500">Avval tadbirni tanlang</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION: ORDERS -->
+      <div id="section-orders" class="space-y-6 hidden">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-bold text-white">Barcha buyurtmalar</h3>
+          <input type="text" id="orders-search-input" onkeyup="searchOrders(this.value)" placeholder="Buyurtma ID yoki telefon..." class="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white w-64 focus:outline-none focus:border-amber-500" />
+        </div>
+        <div class="glass-card rounded-2xl overflow-hidden">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-900/60 text-slate-400 border-b border-slate-800">
+              <tr>
+                <th class="p-4">Buyurtma ID</th>
+                <th class="p-4">Mijoz</th>
+                <th class="p-4">Telefon</th>
+                <th class="p-4">Summa</th>
+                <th class="p-4">To'lov holati</th>
+                <th class="p-4">Sana</th>
+              </tr>
+            </thead>
+            <tbody id="orders-table-tbody" class="divide-y divide-slate-800">
+              <tr><td colspan="6" class="p-4 text-center text-slate-500">Yuklanmoqda...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SECTION: TICKETS -->
+      <div id="section-tickets" class="space-y-6 hidden">
+        <h3 class="text-lg font-bold text-white">Chiqarilgan barcha chiptalar</h3>
+        <div class="glass-card rounded-2xl overflow-hidden">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-900/60 text-slate-400 border-b border-slate-800">
+              <tr>
+                <th class="p-4">Chipta ID</th>
+                <th class="p-4">Tadbir</th>
+                <th class="p-4">Mijoz</th>
+                <th class="p-4">Turi / Sektor</th>
+                <th class="p-4">Holat</th>
+                <th class="p-4 text-right">Amallar</th>
+              </tr>
+            </thead>
+            <tbody id="tickets-table-tbody" class="divide-y divide-slate-800">
+              <tr><td colspan="6" class="p-4 text-center text-slate-500">Yuklanmoqda...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SECTION: QR SCANNER (ENTRY CHECK-IN) -->
+      <div id="section-scanner" class="space-y-6 hidden">
+        <div class="max-w-xl mx-auto glass-card rounded-3xl p-6 text-center space-y-5">
+          <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-2xl">
+            📷
+          </div>
+          <h3 class="text-xl font-bold text-white">QR-Kodli Chipta Skaneri</h3>
+          <p class="text-xs text-slate-400">
+            Tadbirga kirishda mehmon chiptasidagi QR-kodni kameraga tuting yoki token/ID ni qo'lda kiriting.
+          </p>
+
+          <!-- Camera preview box -->
+          <div id="qr-reader" class="rounded-2xl overflow-hidden border border-slate-700 bg-slate-950 mx-auto" style="max-width: 380px;"></div>
+
+          <div class="flex items-center space-x-2 pt-2">
+            <button onclick="startQrScanner()" class="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 rounded-xl text-xs transition">
+              📷 Kamerani yoqish
+            </button>
+            <button onclick="stopQrScanner()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium py-2.5 px-4 rounded-xl text-xs transition border border-slate-700">
+              To'xtatish
+            </button>
+          </div>
+
+          <!-- Manual input fallback -->
+          <div class="pt-4 border-t border-slate-800 flex space-x-2">
+            <input type="text" id="manual-token-input" placeholder="Chipta ID yoki Token..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500" />
+            <button onclick="validateManualToken()" class="bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs transition">
+              Tekshirish
+            </button>
+          </div>
+
+          <!-- Result box -->
+          <div id="scan-result-box" class="hidden p-5 rounded-2xl text-left border"></div>
+        </div>
+      </div>
+
+      <!-- SECTION: USERS -->
+      <div id="section-users" class="space-y-6 hidden">
+        <h3 class="text-lg font-bold text-white">Foydalanuvchilar va Rollar</h3>
+        <div class="glass-card rounded-2xl overflow-hidden">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-900/60 text-slate-400 border-b border-slate-800">
+              <tr>
+                <th class="p-4">Foydalanuvchi</th>
+                <th class="p-4">Telegram ID / Email</th>
+                <th class="p-4">Telefon</th>
+                <th class="p-4">Rol</th>
+                <th class="p-4">Holat</th>
+              </tr>
+            </thead>
+            <tbody id="users-table-tbody" class="divide-y divide-slate-800">
+              <tr><td colspan="5" class="p-4 text-center text-slate-500">Yuklanmoqda...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Create Event Modal -->
+  <div id="create-event-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h4 class="text-base font-bold text-white">Yangi tadbir yaratish</h4>
+        <button onclick="closeCreateEventModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+
+      <form id="create-event-form" onsubmit="submitCreateEvent(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1">Tadbir nomi *</label>
+          <input type="text" name="title" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white" />
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Kategoriya *</label>
+          <select name="category" id="modal-category-select" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"></select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Shahar *</label>
+            <input type="text" name="city" value="Toshkent" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Yosh chegarasi</label>
+            <input type="text" name="ageRestriction" value="0+" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Tadbir o'tkaziladigan joy *</label>
+            <input type="text" name="venue" required placeholder="Humo Arena" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Manzil *</label>
+            <input type="text" name="address" required placeholder="Afrosiyob ko'chasi" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Boshlanish sanasi va vaqti *</label>
+            <input type="datetime-local" name="startAt" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Afisha URL (Rasm)</label>
+            <input type="url" name="poster" placeholder="https://..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Tavsif *</label>
+          <textarea name="description" rows="3" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"></textarea>
+        </div>
+        <div class="flex items-center space-x-2 pt-2">
+          <input type="checkbox" name="isPopular" id="isPopular" />
+          <label for="isPopular" class="text-slate-300">🔥 Ommabop tadbirlar qatoriga qo'shish</label>
+        </div>
+        <div class="flex justify-end space-x-2 pt-4 border-t border-slate-800">
+          <button type="button" onclick="closeCreateEventModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300">Bekor qilish</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold hover:bg-amber-400">Saqlash</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Create Ticket Type Modal -->
+  <div id="create-tt-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full p-6 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h4 class="text-base font-bold text-white">Yangi chipta turi qo'shish</h4>
+        <button onclick="closeCreateTicketTypeModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+
+      <form id="create-tt-form" onsubmit="submitCreateTicketType(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1">Tadbir *</label>
+          <select name="eventId" id="tt-modal-event-select" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"></select>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Chipta turi nomi *</label>
+          <input type="text" name="name" required placeholder="Standard / VIP / Fan-Zone" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Narxi (so'm) *</label>
+            <input type="number" name="price" required min="0" step="1000" placeholder="150000" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Jami chiptalar soni *</label>
+            <input type="number" name="totalQuantity" required min="1" placeholder="100" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Sektor / O'rindiq zonasi</label>
+          <input type="text" name="sector" placeholder="A Sektori, Parter, Balkon..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white" />
+        </div>
+        <div class="flex justify-end space-x-2 pt-4 border-t border-slate-800">
+          <button type="button" onclick="closeCreateTicketTypeModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300">Bekor qilish</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold hover:bg-amber-400">Yaratish</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let authToken = localStorage.getItem('elite_token') || '';
+    let currentUser = null;
+    let allEvents = [];
+    let allCategories = [];
+    let html5QrScanner = null;
+
+    // Check login on load
+    async function initApp() {
+      if (!authToken) {
+        showLoginPrompt();
+        return;
+      }
+      try {
+        const res = await fetch('/api/auth/me', {
+          headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        const data = await res.json();
+        if (!data.success) {
+          logout();
+          return;
+        }
+        currentUser = data.user;
+        document.getElementById('user-name').innerText = (currentUser.firstName + ' ' + (currentUser.lastName || '')).trim() || currentUser.email;
+        document.getElementById('user-role').innerText = currentUser.role;
+        document.getElementById('user-avatar').innerText = (currentUser.firstName || 'A')[0].toUpperCase();
+
+        await loadOverview();
+        await loadCategories();
+      } catch (err) {
+        console.error('Init error:', err);
+      }
+    }
+
+    function showLoginPrompt() {
+      const email = prompt('Admin Email:', 'admin@elitetickets.uz');
+      if (!email) return;
+      const pass = prompt('Admin Parol:', 'AdminElite2026!');
+      if (!pass) return;
+
+      fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: pass })
+      })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) {
+          localStorage.setItem('elite_token', d.token);
+          authToken = d.token;
+          initApp();
+        } else {
+          alert('Kirishda xatolik: ' + d.message);
+        }
+      });
+    }
+
+    function logout() {
+      localStorage.removeItem('elite_token');
+      location.reload();
+    }
+
+    // Tab switcher
+    function switchTab(tab) {
+      const tabs = ['overview', 'events', 'ticket-types', 'orders', 'tickets', 'scanner', 'users'];
+      tabs.forEach(t => {
+        const sec = document.getElementById('section-' + t);
+        const nav = document.getElementById('nav-' + t);
+        if (sec) sec.classList.add('hidden');
+        if (nav) {
+          nav.classList.remove('text-amber-400', 'bg-amber-500/10', 'border', 'border-amber-500/20');
+          nav.classList.add('text-slate-400');
+        }
+      });
+
+      const activeSec = document.getElementById('section-' + tab);
+      const activeNav = document.getElementById('nav-' + tab);
+      if (activeSec) activeSec.classList.remove('hidden');
+      if (activeNav) {
+        activeNav.classList.remove('text-slate-400');
+        activeNav.classList.add('text-amber-400', 'bg-amber-500/10', 'border', 'border-amber-500/20');
+      }
+
+      const titles = {
+        'overview': 'Asosiy panel',
+        'events': 'Tadbirlar boshqaruvi',
+        'ticket-types': 'Chipta turlari',
+        'orders': 'Buyurtmalar',
+        'tickets': 'Chiptalar ro\'yxati',
+        'scanner': 'QR Skaner (Turniket nazoratchisi)',
+        'users': 'Foydalanuvchilar va Rollar',
+      };
+      document.getElementById('page-title').innerText = titles[tab] || 'Admin panel';
+
+      if (tab === 'overview') loadOverview();
+      if (tab === 'events') loadEvents();
+      if (tab === 'ticket-types') setupTicketTypesTab();
+      if (tab === 'orders') loadOrders();
+      if (tab === 'tickets') loadTickets();
+      if (tab === 'users') loadUsers();
+    }
+
+    // Load Overview Stats
+    async function loadOverview() {
+      const res = await fetch('/api/admin/dashboard', { headers: { 'Authorization': 'Bearer ' + authToken } });
+      const data = await res.json();
+      if (!data.success) return;
+
+      const s = data.stats;
+      document.getElementById('stat-revenue').innerText = Number(s.totalRevenue).toLocaleString() + ' so\'m';
+      document.getElementById('stat-tickets-sold').innerText = s.totalTicketsSold + ' ta';
+      document.getElementById('stat-capacity').innerText = 'Mavjud: ' + s.availableCapacity + ' ta';
+      document.getElementById('stat-events').innerText = s.activeEvents + ' ta';
+      document.getElementById('stat-total-events').innerText = 'Jami: ' + s.totalEvents + ' ta';
+      document.getElementById('stat-orders').innerText = s.totalOrders + ' ta';
+      document.getElementById('stat-paid-orders').innerText = 'To\'langan: ' + s.paidOrdersCount + ' ta';
+      document.getElementById('stat-total-users').innerText = s.totalUsers + ' nafar';
+
+      // Recent orders
+      const tbody = document.getElementById('overview-orders-tbody');
+      tbody.innerHTML = '';
+      if (!data.recentOrders || data.recentOrders.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-slate-500">Buyurtmalar yo\'q</td></tr>';
+      } else {
+        data.recentOrders.forEach(o => {
+          const date = new Date(o.createdAt).toLocaleDateString('uz-UZ');
+          const isPaid = o.paymentStatus === 'paid';
+          tbody.innerHTML += `
+            <tr class="hover:bg-slate-900/40">
+              <td class="py-3 font-mono text-slate-300 font-bold">${o.orderNumber}</td>
+              <td class="py-3 text-white">${o.customerInfo.fullName}</td>
+              <td class="py-3 font-semibold text-amber-400">${Number(o.total).toLocaleString()} so'm</td>
+              <td class="py-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${isPaid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}">${o.paymentStatus.toUpperCase()}</span></td>
+              <td class="py-3 text-slate-400">${date}</td>
+            </tr>
+          `;
+        });
+      }
+    }
+
+    // Load Events
+    async function loadEvents() {
+      const res = await fetch('/api/admin/events', { headers: { 'Authorization': 'Bearer ' + authToken } });
+      const data = await res.json();
+      allEvents = data.events || [];
+      const tbody = document.getElementById('events-table-tbody');
+      tbody.innerHTML = '';
+
+      if (allEvents.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-500">Tadbirlar mavjud emas</td></tr>';
+        return;
+      }
+
+      allEvents.forEach(ev => {
+        const date = new Date(ev.startAt).toLocaleString('uz-UZ');
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-900/40">
+            <td class="p-4">
+              <img src="${ev.poster}" class="w-12 h-12 object-cover rounded-xl border border-slate-700" />
+            </td>
+            <td class="p-4 font-semibold text-white">${ev.title}</td>
+            <td class="p-4 text-slate-300">${date}</td>
+            <td class="p-4 text-slate-400">${ev.venue}, ${ev.city}</td>
+            <td class="p-4"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400">${ev.status}</span></td>
+            <td class="p-4 text-right space-x-2">
+              <button onclick="deleteEvent('${ev._id}')" class="text-red-400 hover:text-red-300">O'chirish</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    // Delete Event
+    async function deleteEvent(id) {
+      if (!confirm('Haqiqatan ham ushbu tadbirni o\'chirmoqchimisiz?')) return;
+      const res = await fetch('/api/admin/events/' + id, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + authToken }
+      });
+      const data = await res.json();
+      if (data.success) {
+        loadEvents();
+      } else {
+        alert(data.message);
+      }
+    }
+
+    // Ticket Types Setup
+    async function setupTicketTypesTab() {
+      if (allEvents.length === 0) await loadEvents();
+      const select = document.getElementById('tt-event-select');
+      select.innerHTML = '<option value="">Tadbirni tanlang...</option>';
+      allEvents.forEach(ev => {
+        select.innerHTML += `<option value="${ev._id}">${ev.title}</option>`;
+      });
+    }
+
+    async function loadTicketTypesForEvent() {
+      const eventId = document.getElementById('tt-event-select').value;
+      const tbody = document.getElementById('tt-table-tbody');
+      if (!eventId) {
+        tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-500">Tadbirni tanlang</td></tr>';
+        return;
+      }
+
+      const res = await fetch(`/api/events/${eventId}`);
+      const data = await res.json();
+      const types = data.ticketTypes || [];
+      tbody.innerHTML = '';
+      if (types.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-500">Chipta turlari topilmadi</td></tr>';
+        return;
+      }
+
+      types.forEach(tt => {
+        const available = tt.totalQuantity - (tt.soldQuantity || 0) - (tt.reservedQuantity || 0);
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-900/40">
+            <td class="p-4 font-semibold text-white">${tt.name}</td>
+            <td class="p-4 font-bold text-amber-400">${Number(tt.price).toLocaleString()} so'm</td>
+            <td class="p-4 text-slate-300">${tt.totalQuantity} ta</td>
+            <td class="p-4 text-emerald-400">${tt.soldQuantity || 0} ta</td>
+            <td class="p-4 text-sky-400 font-bold">${available} ta</td>
+            <td class="p-4 text-slate-400">${tt.sector || 'Erkin joy'}</td>
+            <td class="p-4"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${tt.isActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}">${tt.isActive ? 'Faol' : 'Nofaol'}</span></td>
+          </tr>
+        `;
+      });
+    }
+
+    // Orders
+    async function loadOrders(search = '') {
+      const url = '/api/admin/orders' + (search ? '?search=' + encodeURIComponent(search) : '');
+      const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + authToken } });
+      const data = await res.json();
+      const tbody = document.getElementById('orders-table-tbody');
+      tbody.innerHTML = '';
+      const orders = data.orders || [];
+      if (orders.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-500">Buyurtmalar topilmadi</td></tr>';
+        return;
+      }
+
+      orders.forEach(o => {
+        const date = new Date(o.createdAt).toLocaleString('uz-UZ');
+        const isPaid = o.paymentStatus === 'paid';
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-900/40">
+            <td class="p-4 font-mono font-bold text-slate-200">${o.orderNumber}</td>
+            <td class="p-4 text-white font-medium">${o.customerInfo.fullName}</td>
+            <td class="p-4 text-slate-400">${o.customerInfo.phone}</td>
+            <td class="p-4 font-bold text-amber-400">${Number(o.total).toLocaleString()} so'm</td>
+            <td class="p-4"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${isPaid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}">${o.paymentStatus.toUpperCase()}</span></td>
+            <td class="p-4 text-slate-400">${date}</td>
+          </tr>
+        `;
+      });
+    }
+
+    let searchTimeout = null;
+    function searchOrders(val) {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => loadOrders(val), 300);
+    }
+
+    // Tickets
+    async function loadTickets() {
+      const res = await fetch('/api/admin/tickets', { headers: { 'Authorization': 'Bearer ' + authToken } });
+      const data = await res.json();
+      const tbody = document.getElementById('tickets-table-tbody');
+      tbody.innerHTML = '';
+      const tickets = data.tickets || [];
+      if (tickets.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-500">Chiptalar topilmadi</td></tr>';
+        return;
+      }
+
+      tickets.forEach(t => {
+        const isActive = t.status === 'active';
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-900/40">
+            <td class="p-4 font-mono font-bold text-amber-400">${t.ticketId}</td>
+            <td class="p-4 text-white font-semibold">${t.event?.title || 'Tadbir'}</td>
+            <td class="p-4 text-slate-300">${t.customerName} (${t.customerPhone})</td>
+            <td class="p-4 text-slate-400">${t.ticketType?.name || 'Standard'} • ${t.sector || 'Erkin'}</td>
+            <td class="p-4"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${isActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}">${t.status.toUpperCase()}</span></td>
+            <td class="p-4 text-right space-x-2">
+              <a href="/t/${t.ticketId}" target="_blank" class="text-sky-400 hover:underline">Veb-ko'rinish</a>
+              <a href="/api/tickets/${t._id}/pdf" class="text-amber-400 hover:underline">PDF</a>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    // Users
+    async function loadUsers() {
+      const res = await fetch('/api/admin/users', { headers: { 'Authorization': 'Bearer ' + authToken } });
+      const data = await res.json();
+      const tbody = document.getElementById('users-table-tbody');
+      tbody.innerHTML = '';
+      const users = data.users || [];
+      users.forEach(u => {
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-900/40">
+            <td class="p-4 font-semibold text-white">${u.firstName} ${u.lastName || ''} ${u.username ? '(@' + u.username + ')' : ''}</td>
+            <td class="p-4 font-mono text-slate-400">${u.telegramId || u.email || 'Noma\'lum'}</td>
+            <td class="p-4 text-slate-400">${u.phone || '-'}</td>
+            <td class="p-4"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-400">${u.role}</span></td>
+            <td class="p-4"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${u.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}">${u.status}</span></td>
+          </tr>
+        `;
+      });
+    }
+
+    // QR Code Scanner Logic
+    function startQrScanner() {
+      if (!html5QrScanner) {
+        html5QrScanner = new Html5Qrcode("qr-reader");
+      }
+      const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+      html5QrScanner.start({ facingMode: "environment" }, config, onScanSuccess)
+        .catch(err => {
+          alert('Kamerani yoqishda xatolik: ' + err);
+        });
+    }
+
+    function stopQrScanner() {
+      if (html5QrScanner) {
+        html5QrScanner.stop().catch(() => {});
+      }
+    }
+
+    function onScanSuccess(decodedText) {
+      // Audio beep
+      verifyTicketToken(decodedText);
+    }
+
+    function validateManualToken() {
+      const val = document.getElementById('manual-token-input').value;
+      if (!val) return alert('Token yoki Chipta ID kiriting!');
+      verifyTicketToken(val);
+    }
+
+    async function verifyTicketToken(token) {
+      const box = document.getElementById('scan-result-box');
+      box.classList.remove('hidden');
+      box.innerHTML = '<div class="text-center text-slate-400">Tekshirilmoqda...</div>';
+
+      try {
+        const res = await fetch('/api/admin/tickets/validate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + authToken
+          },
+          body: JSON.stringify({ token: token.trim() })
+        });
+        const data = await res.json();
+
+        if (data.valid) {
+          box.className = 'p-5 rounded-2xl text-left border bg-emerald-950/40 border-emerald-500/50 text-emerald-200';
+          box.innerHTML = `
+            <div class="text-lg font-extrabold text-emerald-400 mb-2">✅ KIRISHGA RUXSAT BERILDI!</div>
+            <div class="text-xs space-y-1">
+              <div><strong>Chipta ID:</strong> ${data.ticket.ticketId}</div>
+              <div><strong>Mehmon:</strong> ${data.ticket.customerName} (${data.ticket.customerPhone})</div>
+              <div><strong>Tadbir:</strong> ${data.ticket.eventTitle}</div>
+              <div><strong>Turi / Sektor:</strong> ${data.ticket.ticketType} (${data.ticket.sector || 'Erkin'})</div>
+              <div><strong>Vaqt:</strong> ${new Date(data.ticket.usedAt).toLocaleTimeString('uz-UZ')}</div>
+            </div>
+          `;
+        } else {
+          box.className = 'p-5 rounded-2xl text-left border bg-red-950/40 border-red-500/50 text-red-200';
+          box.innerHTML = `
+            <div class="text-lg font-extrabold text-red-400 mb-2">❌ KIRISH TAQIQLANADI!</div>
+            <div class="text-xs">${data.message}</div>
+          `;
+        }
+      } catch (err) {
+        box.className = 'p-5 rounded-2xl text-left border bg-red-950/40 border-red-500/50 text-red-200';
+        box.innerHTML = `<div class="text-xs text-red-400">Server xatoligi: ${err.message}</div>`;
+      }
+    }
+
+    // Categories
+    async function loadCategories() {
+      const res = await fetch('/api/events/categories');
+      const data = await res.json();
+      allCategories = data.categories || [];
+      const select = document.getElementById('modal-category-select');
+      select.innerHTML = '';
+      allCategories.forEach(c => {
+        select.innerHTML += `<option value="${c._id}">${c.name}</option>`;
+      });
+    }
+
+    // Modals
+    function openCreateEventModal() {
+      document.getElementById('create-event-modal').classList.remove('hidden');
+    }
+    function closeCreateEventModal() {
+      document.getElementById('create-event-modal').classList.add('hidden');
+    }
+
+    async function submitCreateEvent(e) {
+      e.preventDefault();
+      const form = e.target;
+      const formData = new FormData(form);
+      const payload = {
+        title: formData.get('title'),
+        category: formData.get('category'),
+        city: formData.get('city'),
+        venue: formData.get('venue'),
+        address: formData.get('address'),
+        startAt: formData.get('startAt'),
+        poster: formData.get('poster') || undefined,
+        description: formData.get('description'),
+        ageRestriction: formData.get('ageRestriction'),
+        isPopular: formData.get('isPopular') === 'on',
+      };
+
+      const res = await fetch('/api/admin/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + authToken
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        closeCreateEventModal();
+        form.reset();
+        loadEvents();
+        alert('Tadbir muvaffaqiyatli yaratildi! Endi chipta turlarini qo\'shishingiz mumkin.');
+      } else {
+        alert(data.message);
+      }
+    }
+
+    function openCreateTicketTypeModal() {
+      const select = document.getElementById('tt-modal-event-select');
+      select.innerHTML = '';
+      allEvents.forEach(ev => {
+        select.innerHTML += `<option value="${ev._id}">${ev.title}</option>`;
+      });
+      document.getElementById('create-tt-modal').classList.remove('hidden');
+    }
+
+    function closeCreateTicketTypeModal() {
+      document.getElementById('create-tt-modal').classList.add('hidden');
+    }
+
+    async function submitCreateTicketType(e) {
+      e.preventDefault();
+      const form = e.target;
+      const formData = new FormData(form);
+      const payload = {
+        eventId: formData.get('eventId'),
+        name: formData.get('name'),
+        price: formData.get('price'),
+        totalQuantity: formData.get('totalQuantity'),
+        sector: formData.get('sector'),
+      };
+
+      const res = await fetch('/api/admin/ticket-types', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + authToken
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        closeCreateTicketTypeModal();
+        form.reset();
+        alert('Chipta turi muvaffaqiyatli qo\'shildi!');
+        loadTicketTypesForEvent();
+      } else {
+        alert(data.message);
+      }
+    }
+
+    // Startup
+    initApp();
+  </script>
+</body>
+</html>
